@@ -1,0 +1,221 @@
+# Comparative Sequence Analysis of the Hemagglutinin (HA) Gene of Influenza A (H1N1) Viruses from Sri Lanka, 2009-2011
+
+**Student registration number:** `[YOUR REG NO]`  **Name:** Bavaruba Kuventhirarasa
+**Module:** Bioinformatics, ICA3 (2026)
+
+> **How to use this template:** text in `[square brackets]` must be replaced with your own
+> numbers and observations after you knit `code/02_analysis.Rmd`. Delete this note and every
+> bracketed instruction before submitting. Aim for 1,500-2,500 words (excluding references).
+
+---
+
+## 1. Abstract
+
+[Max 150 words. Example structure: Influenza viruses change genetically over time, which
+affects vaccine design and surveillance. We analysed 12 hemagglutinin (HA) gene sequences of
+influenza A (H1N1) viruses collected in Sri Lanka between 2009 and 2011 (NCBI GenBank). We
+calculated nucleotide composition and GC content, aligned the sequences with Clustal Omega,
+identified conserved and variable regions and built a neighbour-joining tree in R. Mean GC
+content was `[x]`%, sequences were `[x]`% identical on average, and `[n]` of 1,701 nucleotide
+positions were variable, mostly at the `[third]` codon position. The tree showed `[pattern]`.]
+
+## 2. Introduction
+
+Influenza is an acute respiratory disease caused by RNA viruses. Influenza A viruses are
+divided into subtypes by their surface proteins hemagglutinin (HA) and neuraminidase (NA).
+HA binds the virus to sialic acid receptors on host cells, helps the viral membrane fuse with
+the cell, and is the main target of neutralising antibodies (Skehel and Wiley, 2000).
+
+The influenza RNA polymerase has no proofreading, so HA accumulates mutations over time
+(antigenic drift), which is why vaccines need regular updating. Comparing HA sequences shows
+**which parts of the gene change and which stay conserved**, and how closely viruses are
+related. Local sequence data are valuable because they show how viruses circulated in a
+particular country. [Add one or two sentences about influenza in Sri Lanka, with a citation
+from your own reading.]
+
+**Aim:** To compare HA gene sequences of influenza A (H1N1) viruses collected in Sri Lanka
+(2009-2011) to describe their nucleotide composition, identify conserved and variable regions,
+and explore their genetic relationships.
+
+**Questions / hypotheses:**
+1. Does GC content differ between years of collection?
+2. Is variation spread evenly along the gene, or concentrated in particular regions and codon
+   positions (expected: more changes at the third codon position)?
+3. Do the sequences cluster by year of collection or by location?
+
+## 3. Data
+
+- **Source:** NCBI GenBank (Sayers et al., 2022), nucleotide records downloaded as FASTA and
+  stored in `data/raw_download_all_segments.fasta`.
+- **Raw file:** 20 records. Twelve are HA (segment 4) sequences (accessions KC190041-KC190052);
+  the other eight are different gene segments (PB2, PB1, PA, NP, NA, MP, NS) and were removed
+  because they are not HA. Cleaning is done in `code/01_prepare_data.R`.
+- **Final data set:** 12 HA coding sequences, each 1,701 nucleotides, collected in Sri Lanka
+  (`[n]` in 2009, `[n]` in 2010, `[n]` in 2011), from `[locations: Sri Lanka, Colombo,
+  Karapitiya, Matara, Rathnapura]`. Subtype H1N1; `[check the GenBank records to confirm
+  whether these are pandemic 2009 H1N1 viruses and say so]`.
+- **Variables:** accession, location, year, collection date, sequence length.
+- **Associated publication:** `[open one GenBank record, e.g. KC190041, find the linked
+  publication and cite it here]`.
+- **Ethics and licence:** GenBank data are public and free to use; the original submitters are
+  acknowledged by citing the accessions. No human subject data are used.
+
+## 4. Methods
+
+All analysis was done in R (`[R version]`) in `code/02_analysis.Rmd`.
+
+1. **Import and quality control.** Sequences were read with `Biostrings`. Length and ambiguous
+   bases were checked (sequences with more than 1% ambiguous bases would be removed).
+2. **Nucleotide composition and GC content.** The percentage of A, C, G and T was calculated
+   with `alphabetFrequency()`; GC content = (G + C) / (A + C + G + T) × 100. GC content was
+   compared between years with a Kruskal-Wallis test, chosen because groups are small and
+   not assumed to be normal.
+3. **Multiple sequence alignment.** Sequences were aligned with Clustal Omega
+   (Sievers et al., 2011) through the `msa` package (Bodenhofer et al., 2015).
+4. **Conserved and variable regions.** For each alignment position I calculated the fraction
+   of sequences with the most common base. A position is *variable* if at least two different
+   bases occur. Conservation was smoothed with a 30-nt sliding window; *conserved blocks* were
+   ≥30 consecutive identical positions. Pairwise identity was calculated with `ape::dist.dna`.
+5. **Codon positions and amino acids.** Because all sequences are complete coding sequences,
+   variable sites were counted by codon position, and the sequences were translated to find
+   variable amino-acid positions.
+6. **Phylogenetic analysis.** Neighbour-joining trees (Saitou and Nei, 1987) were built from
+   Kimura 2-parameter distances with `ape` (Paradis and Schliep, 2019), with 100 bootstrap
+   replicates. Neighbour-joining is fast and suitable for a small data set but less accurate
+   than maximum likelihood.
+7. **Visualisation.** `ggplot2` and `pheatmap` (Wickham et al., 2019).
+
+## 5. Results
+
+### 5.1 Sequence quality
+
+[Number of sequences, length (all 1,701 nt), number of ambiguous bases (a few sequences
+contain 1-3 ambiguous bases).]
+
+![Figure 1](figures/length_plot-1.png)
+*Figure 1. Length of each HA sequence, coloured by year of collection.*
+
+### 5.2 Nucleotide composition and GC content
+
+[Table from `results/nucleotide_composition.csv` or the Rmd output.]
+
+| Year | n | %A | %C | %G | %T | %GC (mean ± sd) |
+|---|---|---|---|---|---|---|
+| 2009 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| 2010 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+| 2011 | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] |
+
+![Figure 2](figures/composition_plot-1.png)
+*Figure 2. Nucleotide composition of each HA sequence.*
+
+![Figure 3](figures/gc_plot-1.png)
+*Figure 3. GC content (%) of each sequence.*
+
+![Figure 4](figures/gc_test-1.png)
+*Figure 4. GC content by year. Kruskal-Wallis test: χ² = [ ], p = [ ].*
+
+[Describe: is HA rich in A? Is GC content around 40-41%? Any difference between years?]
+
+### 5.3 Conserved and variable regions
+
+[Alignment summary from the Rmd: sequences, alignment length, variable sites, % variable,
+fully conserved positions, mean and minimum pairwise identity.]
+
+![Figure 5](figures/h1_cons-1.png)
+*Figure 5. Conservation along the alignment (30-nt window).*
+
+![Figure 6](figures/h1_var-1.png)
+*Figure 6. Variable sites per 100-nt bin.*
+
+[Name the regions with most variation and the longest conserved block(s) with positions.]
+
+![Figure 7](figures/h1_identity-1.png)
+*Figure 7. Pairwise nucleotide identity (%).*
+
+### 5.4 Codon positions and amino-acid changes
+
+[Table from `results/H1N1_variable_sites_by_codon_position.csv`; number of variable
+amino-acid positions and their positions.]
+
+![Figure 9](figures/codon_plot-1.png)
+*Figure 9. Variable nucleotide sites at each codon position.*
+
+### 5.5 Genetic relationships
+
+![Figure 8](figures/h1_tree-1.png)
+*Figure 8. Neighbour-joining tree (K2P). Bootstrap values ≥70% shown; tip colour = year.*
+
+[Do sequences cluster by year, location, or neither? Which nodes have bootstrap ≥70%?
+Very similar sequences usually give short branches and low support: say so.]
+
+## 6. Discussion
+
+[3-4 paragraphs. Use the prompts in section 8 of `code/02_analysis.Rmd`.]
+
+- **Composition:** interpret the GC content and whether years differ; keep claims modest
+  because n is small.
+- **Variation:** with about 99% identity the sequences are very similar. Discuss where the
+  variable sites are, why the third codon position changes most (many changes do not alter
+  the amino acid), and what the amino-acid changes might mean.
+- **Relationships:** what the tree suggests about how the viruses were related over the
+  2009-2011 period.
+- **Limitations:** only 12 sequences, one subtype, one country and a 3-year window; sampling
+  bias; neighbour-joining rather than maximum likelihood; no dN/dS analysis.
+- **Real-world implications:** value of local sequence data for surveillance and vaccine
+  strain selection.
+
+## 7. Conclusion and future work
+
+[3-4 sentences answering the three questions from the introduction.]
+
+Future work: add H3N2 or global H1N1 sequences for comparison, maximum-likelihood trees
+(`phangorn` or IQ-TREE), dN/dS analysis to detect selection, mapping variable sites onto the
+HA structure, and analysing other gene segments.
+
+## 8. Reproducibility
+
+```
+├── README.md                       report
+├── code/
+│   ├── 00_install_packages.R       installs packages
+│   ├── 01_prepare_data.R           keeps HA sequences, builds metadata
+│   ├── 02_analysis.Rmd             full analysis
+│   └── 02_analysis.html            rendered output
+├── data/                           raw FASTA, cleaned FASTA, metadata
+├── figures/                        figures used in this report
+└── results/                        tables, alignment, tree
+```
+
+1. Clone the repository and open the folder as an RStudio project.
+2. `source("code/00_install_packages.R")` (first time only).
+3. `source("code/01_prepare_data.R")` (the cleaned files are already in `data/`).
+4. `rmarkdown::render("code/02_analysis.Rmd")`. The HTML appears in `code/`, figures in
+   `figures/` and tables in `results/`.
+
+Package versions: see `sessionInfo()` at the end of the HTML report
+(`[R, Biostrings, msa, ape, tidyverse versions]`).
+
+## 9. References
+
+*Check each reference before submitting, and add `citation("package")` output for any package
+not listed.*
+
+- Bodenhofer U, Bonatesta E, Horejs-Kainrath C, Hochreiter S (2015). msa: an R package for
+  multiple sequence alignment. *Bioinformatics* 31(24):3997-3999.
+- Paradis E, Schliep K (2019). ape 5.0: an environment for modern phylogenetics and
+  evolutionary analyses in R. *Bioinformatics* 35(3):526-528.
+- Pagès H, Aboyoun P, Gentleman R, DebRoy S. Biostrings: Efficient manipulation of biological
+  strings. R/Bioconductor package.
+- Saitou N, Nei M (1987). The neighbor-joining method: a new method for reconstructing
+  phylogenetic trees. *Molecular Biology and Evolution* 4(4):406-425.
+- Sayers EW, et al. (2022). Database resources of the National Center for Biotechnology
+  Information. *Nucleic Acids Research* 50(D1):D20-D26.
+- Sievers F, et al. (2011). Fast, scalable generation of high-quality protein multiple
+  sequence alignments using Clustal Omega. *Molecular Systems Biology* 7:539.
+- Skehel JJ, Wiley DC (2000). Receptor binding and membrane-fusion in virus entry: the
+  influenza hemagglutinin. *Annual Review of Biochemistry* 69:531-569.
+- Wickham H, et al. (2019). Welcome to the tidyverse. *Journal of Open Source Software*
+  4(43):1686.
+- Kolde R. pheatmap: Pretty Heatmaps. R package.
+- **Dataset:** NCBI GenBank accessions KC190041-KC190052 (`data/selected_accessions.csv`),
+  https://www.ncbi.nlm.nih.gov/genbank/. Accessed `[date]`. `[Add the associated publication.]`
