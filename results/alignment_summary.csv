@@ -1,0 +1,2 @@
+subtype,sequences,alignment_length,variable_sites,variable_pct,fully_conserved,mean_identity_pct,min_identity_pct,variable_aa_positions
+H1N1,12,1701,44,2.6,1657,99.27,98.59,23
