@@ -1,0 +1,409 @@
+---
+title: "Comparative sequence analysis of the influenza A hemagglutinin (HA) gene"
+subtitle: "ICA3 Bioinformatics 2026"
+author: "Bavaruba Kuventhirarasa"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# This Rmd lives in code/, so figures and results go one level up.
+dir.create("../figures", showWarnings = FALSE)
+dir.create("../results", showWarnings = FALSE)
+
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE,
+  fig.path = "../figures/", dev = "png", dpi = 200,
+  fig.width = 7, fig.height = 5
+)
+set.seed(2026)   # reproducibility (used by bootstrap)
+```
+
+# 1. Aim
+
+Compare 12 HA gene sequences of influenza A (H1N1) viruses collected in Sri Lanka
+in 2009-2011 (NCBI GenBank) to:
+
+1. describe nucleotide composition and GC content,
+2. align the sequences and identify conserved and variable regions,
+3. explore the genetic relationships among the viruses with phylogenetic trees.
+
+**Before knitting:** run `code/01_prepare_data.R` once (from the project root) so that
+`data/ha_sequences.fasta` and `data/ha_metadata.csv` exist.
+
+# 2. Packages
+
+```{r packages}
+library(tidyverse)
+library(Biostrings)   # sequence objects, composition
+library(msa)          # multiple sequence alignment (Clustal Omega)
+library(ape)          # distances, trees, bootstrap
+library(pheatmap)     # identity heatmap
+library(RColorBrewer)
+```
+
+# 3. Data import and cleaning
+
+```{r import}
+meta <- read_csv("../data/ha_metadata.csv", show_col_types = FALSE)
+fa   <- readDNAStringSet("../data/ha_sequences.fasta")
+
+# FASTA headers start with the accession.version; use it to attach our labels
+names(fa) <- sub(" .*", "", names(fa))
+stopifnot(all(meta$accession %in% names(fa)))
+fa <- fa[meta$accession]
+names(fa) <- meta$label        # label = accession_location_year
+
+# Force upper case and look at the data
+meta <- meta |> mutate(length = width(fa))
+table(meta$subtype)
+meta |> select(label, subtype, location, year, length)
+```
+
+## 3.1 Sequence quality checks
+
+Ambiguous bases (N, R, Y, ...) reduce alignment quality, so we count them.
+
+```{r qc}
+freq <- alphabetFrequency(fa, baseOnly = TRUE)   # columns A C G T other
+
+qc <- tibble(
+  label     = names(fa),
+  subtype   = meta$subtype,
+  year      = meta$year,
+  length    = width(fa),
+  ambiguous = freq[, "other"]
+)
+qc
+
+# Remove sequences with more than 1% ambiguous bases (none expected)
+bad <- qc$label[qc$ambiguous / qc$length > 0.01]
+if (length(bad) > 0) {
+  fa   <- fa[!names(fa) %in% bad]
+  meta <- meta[!meta$label %in% bad, ]
+  message("Removed ", length(bad), " sequence(s) with >1% ambiguous bases")
+}
+```
+
+```{r length_plot, fig.cap="Figure 1. Length of each HA sequence (nucleotides), coloured by year of collection."}
+ggplot(qc, aes(x = reorder(label, length), y = length, fill = factor(year))) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(x = NULL, y = "Sequence length (nt)", fill = "Year") +
+  theme_minimal(base_size = 9)
+```
+
+# 4. Nucleotide composition and GC content
+
+```{r composition}
+freq <- alphabetFrequency(fa, baseOnly = TRUE)
+acgt <- rowSums(freq[, c("A", "C", "G", "T")])
+
+comp <- tibble(
+  label   = names(fa),
+  subtype = meta$subtype,
+  year    = meta$year,
+  A  = 100 * freq[, "A"] / acgt,
+  T  = 100 * freq[, "T"] / acgt,
+  G  = 100 * freq[, "G"] / acgt,
+  C  = 100 * freq[, "C"] / acgt
+) |>
+  mutate(GC = G + C)
+
+write_csv(comp, "../results/nucleotide_composition.csv")
+comp |> mutate(across(where(is.numeric), ~ round(.x, 2)))
+```
+
+```{r composition_summary}
+comp |>
+  group_by(year) |>
+  summarise(n = n(), mean_A = mean(A), mean_T = mean(T),
+            mean_G = mean(G), mean_C = mean(C),
+            mean_GC = mean(GC), sd_GC = sd(GC), .groups = "drop") |>
+  mutate(across(where(is.numeric), ~ round(.x, 2)))
+```
+
+```{r composition_plot, fig.height=6, fig.cap="Figure 2. Nucleotide composition (% A, C, G, T) of each HA sequence."}
+comp |>
+  pivot_longer(c(A, C, G, T), names_to = "base", values_to = "percent") |>
+  ggplot(aes(x = label, y = percent, fill = base)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set2") +
+  labs(x = NULL, y = "Percentage of bases", fill = "Base") +
+  theme_minimal(base_size = 9)
+```
+
+```{r gc_plot, fig.height=6, fig.cap="Figure 3. GC content (%) of each HA sequence, coloured by year of collection."}
+ggplot(comp, aes(x = reorder(label, GC), y = GC, fill = factor(year))) +
+  geom_col() +
+  coord_flip(ylim = c(min(comp$GC) - 3, max(comp$GC) + 1)) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(x = NULL, y = "GC content (%)", fill = "Year") +
+  theme_minimal(base_size = 9)
+```
+
+Does GC content differ between years of collection (2009, 2010, 2011)? With
+small groups we use a non-parametric Kruskal-Wallis test.
+
+```{r gc_test, fig.width=5, fig.cap="Figure 4. GC content by year of collection (points = individual sequences)."}
+if (n_distinct(comp$year) > 1) {
+  gc_test <- kruskal.test(GC ~ factor(year), data = comp)
+  print(gc_test)
+} else {
+  message("Only one year in the data, so the test is skipped.")
+}
+
+ggplot(comp, aes(x = factor(year), y = GC, fill = factor(year))) +
+  geom_boxplot(alpha = 0.6, outlier.shape = NA) +
+  geom_jitter(width = 0.1, size = 2) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(x = "Year of collection", y = "GC content (%)") +
+  theme_minimal() + theme(legend.position = "none")
+```
+
+# 5. Helper functions for alignment, conservation and trees
+
+These functions are used for the conservation, identity and tree analysis of the
+H1N1 alignment.
+
+```{r helpers}
+# ---- 1. multiple sequence alignment (Clustal Omega) ------------------------
+run_alignment <- function(st) {
+  ids <- meta$label[meta$subtype == st]
+  aln <- msa(fa[ids], method = "ClustalOmega", type = "dna",
+             order = "input", verbose = FALSE)
+  m <- as.matrix(as(aln, "DNAStringSet"))        # sequences x positions
+  list(aln = aln, m = m, dnabin = as.DNAbin(m), ids = ids)
+}
+
+# ---- 2. per-position statistics -------------------------------------------
+site_stats <- function(m, window = 30) {
+  bases <- c("A", "C", "G", "T")
+  stats <- map_dfr(seq_len(ncol(m)), function(j) {
+    col <- m[, j]
+    x   <- col[col %in% bases]
+    tibble(
+      pos      = j,
+      gap_frac = mean(col == "-"),
+      top_frac = if (length(x)) max(table(x)) / length(x) else NA_real_,
+      entropy  = if (length(x)) { p <- table(x) / length(x); -sum(p * log2(p)) } else NA_real_
+    )
+  })
+  stats |>
+    mutate(
+      variable = !is.na(top_frac) & top_frac < 1,     # >= 2 different bases
+      win_cons = as.numeric(stats::filter(top_frac, rep(1 / window, window), sides = 2))
+    )
+}
+
+# ---- 3. blocks of >= min_len consecutive identical, gap-free positions -----
+conserved_blocks <- function(ss, min_len = 30) {
+  r <- rle(!ss$variable & ss$gap_frac == 0)
+  ends   <- cumsum(r$lengths)
+  starts <- ends - r$lengths + 1
+  tibble(start = starts, end = ends, length = r$lengths, conserved = r$values) |>
+    filter(conserved, length >= min_len) |>
+    select(start, end, length)
+}
+
+# ---- 4. plots ---------------------------------------------------------------
+plot_conservation <- function(ss, st) {
+  ggplot(ss, aes(pos, win_cons)) +
+    geom_line(colour = "steelblue", linewidth = 0.6) +
+    labs(x = "Alignment position (nt)",
+         y = "Conservation (30-nt window)",
+         title = paste(st, "- conservation along the HA alignment")) +
+    coord_cartesian(ylim = c(min(ss$win_cons, na.rm = TRUE) - 0.01, 1)) +
+    theme_minimal()
+}
+
+plot_variable_bins <- function(ss, st, bin = 100) {
+  ss |>
+    mutate(bin = (pos - 1) %/% bin * bin + 1) |>
+    group_by(bin) |>
+    summarise(variable_sites = sum(variable), .groups = "drop") |>
+    ggplot(aes(bin, variable_sites)) +
+    geom_col(fill = "firebrick", width = bin * 0.9) +
+    labs(x = "Alignment position (start of 100-nt bin)",
+         y = "Variable sites per 100 nt",
+         title = paste(st, "- variable sites")) +
+    theme_minimal()
+}
+
+plot_identity <- function(db, st) {
+  pid <- 100 * (1 - as.matrix(dist.dna(db, model = "raw", pairwise.deletion = TRUE)))
+  yr  <- meta$year[match(rownames(pid), meta$label)]
+  ann <- data.frame(Year = factor(yr), row.names = rownames(pid))
+  pheatmap(pid, annotation_row = ann, main = paste(st, "- pairwise identity (%)"),
+           fontsize_row = 7, fontsize_col = 7)
+  invisible(pid)
+}
+
+# ---- 5. neighbour-joining tree with bootstrap -------------------------------
+make_tree <- function(db, B = 100) {
+  d  <- dist.dna(db, model = "K80", pairwise.deletion = TRUE)
+  tr <- ladderize(nj(d))
+  bs <- boot.phylo(tr, db,
+                   function(x) nj(dist.dna(x, model = "K80", pairwise.deletion = TRUE)),
+                   B = B)
+  list(tr = tr, pct = 100 * bs / B)
+}
+
+plot_tree <- function(tt, st) {
+  yrs  <- sort(unique(meta$year))
+  cols <- setNames(hcl.colors(length(yrs), "Zissou 1"), yrs)
+  tip_year <- meta$year[match(tt$tr$tip.label, meta$label)]
+  plot(tt$tr, cex = 0.7, tip.color = cols[as.character(tip_year)],
+       main = paste(st, "- neighbour-joining tree (K80)"))
+  nodelabels(ifelse(tt$pct >= 70, round(tt$pct), ""), frame = "none",
+             cex = 0.6, adj = c(1.2, -0.4), col = "grey30")
+  add.scale.bar(cex = 0.7)
+  legend("bottomleft", legend = yrs, col = cols, pch = 19, cex = 0.7,
+         title = "Year", bty = "n")
+}
+
+summarise_alignment <- function(res, ss, st) {
+  pid <- 100 * (1 - as.matrix(dist.dna(res$dnabin, model = "raw", pairwise.deletion = TRUE)))
+  tibble(
+    subtype            = st,
+    sequences          = nrow(res$m),
+    alignment_length   = ncol(res$m),
+    variable_sites     = sum(ss$variable),
+    variable_pct       = round(100 * mean(ss$variable), 1),
+    fully_conserved    = sum(!ss$variable & ss$gap_frac == 0),
+    mean_identity_pct  = round(mean(pid[lower.tri(pid)]), 2),
+    min_identity_pct   = round(min(pid[lower.tri(pid)]), 2)
+  )
+}
+```
+
+# 6. H1N1 analysis
+
+```{r h1_align}
+st  <- "H1N1"
+h1  <- run_alignment(st)
+h1s <- site_stats(h1$m)
+h1_blocks <- conserved_blocks(h1s)
+write_csv(h1s, "../results/H1N1_site_statistics.csv")
+writeXStringSet(as(h1$aln, "DNAStringSet"), "../results/H1N1_alignment.fasta")
+```
+
+## 6.1 Multiple sequence alignment
+
+```{r h1_aln_print}
+# Text view of the first 80 alignment columns ("-" = gap).
+# The full alignment is saved to results/H1N1_alignment.fasta
+snippet <- apply(h1$m[, 1:80], 1, paste, collapse = "")
+cat(sprintf("%-32s %s", substr(names(snippet), 1, 32), snippet), sep = "\n")
+```
+
+## 6.2 Conserved and variable regions
+
+```{r h1_summary}
+summarise_alignment(h1, h1s, st)
+```
+
+```{r h1_cons, fig.cap="Figure 5. H1N1: conservation (30-nt window) along the HA alignment."}
+plot_conservation(h1s, st)
+```
+
+```{r h1_var, fig.cap="Figure 6. H1N1: number of variable sites in each 100-nt bin."}
+plot_variable_bins(h1s, st)
+```
+
+```{r h1_blocks}
+h1_blocks
+```
+
+## 6.3 Pairwise identity
+
+```{r h1_identity, fig.height=6, fig.cap="Figure 7. H1N1: pairwise nucleotide identity (%) between sequences."}
+h1_pid <- plot_identity(h1$dnabin, st)
+```
+
+## 6.4 Phylogenetic tree
+
+```{r h1_tree, fig.height=6, fig.cap="Figure 8. H1N1: neighbour-joining tree (Kimura 2-parameter distance), bootstrap support (%; only values >= 70 shown) and tip colour = year of collection."}
+h1t <- make_tree(h1$dnabin)
+plot_tree(h1t, st)
+write.tree(h1t$tr, "../results/H1N1_tree.nwk")
+```
+
+# 7. Where do the changes happen? Codon positions and amino acids
+
+All sequences are complete coding sequences (start with ATG, 1,701 nt, no gaps in
+the alignment), so alignment position 1 is the first base of codon 1.
+Mutations at the 3rd codon position are often *synonymous* (no amino-acid change).
+
+```{r codon}
+if (length(unique(width(fa))) != 1 || any(h1s$gap_frac > 0)) {
+  warning("Sequences differ in length or the alignment has gaps: ",
+          "alignment positions may not equal codon positions.")
+}
+
+codon_tab <- h1s |>
+  mutate(codon_position = ((pos - 1) %% 3) + 1) |>
+  group_by(codon_position) |>
+  summarise(sites = n(), variable_sites = sum(variable),
+            pct_variable = round(100 * mean(variable), 1), .groups = "drop")
+codon_tab
+write_csv(codon_tab, "../results/H1N1_variable_sites_by_codon_position.csv")
+```
+
+```{r codon_plot, fig.width=5, fig.cap="Figure 9. H1N1: number of variable nucleotide sites at each codon position."}
+ggplot(codon_tab, aes(factor(codon_position), variable_sites)) +
+  geom_col(fill = "firebrick") +
+  labs(x = "Codon position", y = "Variable sites") +
+  theme_minimal()
+```
+
+Translate the sequences and count variable **amino-acid** positions:
+
+```{r aa}
+aa   <- translate(fa, if.fuzzy.codon = "X")     # ambiguous codons become X
+aa_m <- as.matrix(aa)
+
+aa_var <- apply(aa_m, 2, function(x) {
+  x <- x[!x %in% c("X", "*")]
+  length(unique(x)) > 1
+})
+
+cat("Amino-acid positions:", ncol(aa_m), "\n")
+cat("Variable amino-acid positions:", sum(aa_var), "\n")
+cat("Positions (1 = first residue):", which(aa_var), "\n")
+```
+
+Summary table:
+
+```{r summary}
+summarise_alignment(h1, h1s, "H1N1") |>
+  mutate(variable_aa_positions = sum(aa_var)) |>
+  write_csv("../results/alignment_summary.csv")
+
+read_csv("../results/alignment_summary.csv", show_col_types = FALSE)
+```
+
+# 8. Notes for the Discussion section
+
+Look at your own results and answer:
+
+1. Does GC content differ between 2009, 2010 and 2011 (Kruskal-Wallis p-value)? Remember `n` is small.
+2. How many nucleotide sites vary, and how are they spread along the gene? Sequences this similar (about 99% identity) show few variable sites, so describe the pattern carefully. Positions are alignment positions: the sequences are complete coding sequences, so position 1 = codon 1.
+3. Which codon position carries most of the variable sites, and what does it suggest (synonymous vs amino-acid changes)? How many amino-acid positions vary?
+4. How long are the conserved blocks, and why might conserved regions matter (receptor binding, membrane fusion, structure, primer design)?
+5. Do the sequences cluster by year, by location, or neither? Are any nodes supported at 70% or more? With such similar sequences, short branches and low bootstrap values are expected.
+6. Limitations: only 12 sequences, one subtype, one country and a 3-year window; sampling bias; a distance-based tree (neighbour-joining) rather than maximum likelihood; no selection (dN/dS) analysis.
+7. Future work: add H3N2 or global H1N1 sequences, maximum-likelihood trees (`phangorn`, IQ-TREE), dN/dS, mapping variable sites onto the HA protein structure.
+
+# 9. Reproducibility
+
+```{r session}
+sessionInfo()
+```
