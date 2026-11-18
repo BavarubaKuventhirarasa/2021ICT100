@@ -116,8 +116,6 @@ All analysis was done in R  in `code/02_analysis.Rmd`.
 
 ### 5.4 Codon positions and amino-acid changes
 
-[Table from `results/H1N1_variable_sites_by_codon_position.csv`; number of variable
-amino-acid positions and their positions.]
 
 ![Figure 9](figures/codon_plot-1.png)
 *Figure 9. Variable nucleotide sites at each codon position.*
@@ -125,14 +123,9 @@ amino-acid positions and their positions.]
 ### 5.5 Genetic relationships
 
 ![Figure 8](figures/h1_tree-1.png)
-*Figure 8. Neighbour-joining tree (K2P). Bootstrap values ≥70% shown; tip colour = year.*
-
-[Do sequences cluster by year, location, or neither? Which nodes have bootstrap ≥70%?
-Very similar sequences usually give short branches and low support: say so.]
+*Figure 8. Neighbour-joining tree (K2P). Bootstrap values ≥70% shown; tip colour = year.
 
 ## 6. Discussion
-
-[3-4 paragraphs. Use the prompts in section 8 of `code/02_analysis.Rmd`.]
 
 - **Composition:** interpret the GC content and whether years differ; keep claims modest
   because n is small.
@@ -147,8 +140,6 @@ Very similar sequences usually give short branches and low support: say so.]
   strain selection.
 
 ## 7. Conclusion and future work
-
-[3-4 sentences answering the three questions from the introduction.]
 
 Future work: add H3N2 or global H1N1 sequences for comparison, maximum-likelihood trees
 (`phangorn` or IQ-TREE), dN/dS analysis to detect selection, mapping variable sites onto the
@@ -174,30 +165,8 @@ HA structure, and analysing other gene segments.
 4. `rmarkdown::render("code/02_analysis.Rmd")`. The HTML appears in `code/`, figures in
    `figures/` and tables in `results/`.
 
-Package versions: see `sessionInfo()` at the end of the HTML report
-(`[R, Biostrings, msa, ape, tidyverse versions]`).
+Package versions: see `sessionInfo()` at the end of the HTML report.
 
 ## 9. References
-
-*Check each reference before submitting, and add `citation("package")` output for any package
-not listed.*
-
-- Bodenhofer U, Bonatesta E, Horejs-Kainrath C, Hochreiter S (2015). msa: an R package for
-  multiple sequence alignment. *Bioinformatics* 31(24):3997-3999.
-- Paradis E, Schliep K (2019). ape 5.0: an environment for modern phylogenetics and
-  evolutionary analyses in R. *Bioinformatics* 35(3):526-528.
-- Pagès H, Aboyoun P, Gentleman R, DebRoy S. Biostrings: Efficient manipulation of biological
-  strings. R/Bioconductor package.
-- Saitou N, Nei M (1987). The neighbor-joining method: a new method for reconstructing
-  phylogenetic trees. *Molecular Biology and Evolution* 4(4):406-425.
-- Sayers EW, et al. (2022). Database resources of the National Center for Biotechnology
-  Information. *Nucleic Acids Research* 50(D1):D20-D26.
-- Sievers F, et al. (2011). Fast, scalable generation of high-quality protein multiple
-  sequence alignments using Clustal Omega. *Molecular Systems Biology* 7:539.
-- Skehel JJ, Wiley DC (2000). Receptor binding and membrane-fusion in virus entry: the
-  influenza hemagglutinin. *Annual Review of Biochemistry* 69:531-569.
-- Wickham H, et al. (2019). Welcome to the tidyverse. *Journal of Open Source Software*
-  4(43):1686.
-- Kolde R. pheatmap: Pretty Heatmaps. R package.
 - **Dataset:** NCBI GenBank accessions KC190041-KC190052 (`data/selected_accessions.csv`),
   https://www.ncbi.nlm.nih.gov/genbank/. Accessed `[date]`. `[Add the associated publication.]`
