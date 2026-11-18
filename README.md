@@ -1,17 +1,14 @@
 # Comparative Sequence Analysis of the Hemagglutinin (HA) Gene of Influenza A (H1N1) Viruses from Sri Lanka, 2009-2011
 
-**Student registration number:** `[YOUR REG NO]`  **Name:** Bavaruba Kuventhirarasa
+**Student registration number:** `[ 2021/ICT/100]`  **Name:** Bavaruba Kuventhirarasa
 **Module:** Bioinformatics, ICA3 (2026)
 
-> **How to use this template:** text in `[square brackets]` must be replaced with your own
-> numbers and observations after you knit `code/02_analysis.Rmd`. Delete this note and every
-> bracketed instruction before submitting. Aim for 1,500-2,500 words (excluding references).
 
 ---
 
 ## 1. Abstract
 
-[Max 150 words. Example structure: Influenza viruses change genetically over time, which
+[Influenza viruses change genetically over time, which
 affects vaccine design and surveillance. We analysed 12 hemagglutinin (HA) gene sequences of
 influenza A (H1N1) viruses collected in Sri Lanka between 2009 and 2011 (NCBI GenBank). We
 calculated nucleotide composition and GC content, aligned the sequences with Clustal Omega,
@@ -30,18 +27,11 @@ The influenza RNA polymerase has no proofreading, so HA accumulates mutations ov
 (antigenic drift), which is why vaccines need regular updating. Comparing HA sequences shows
 **which parts of the gene change and which stay conserved**, and how closely viruses are
 related. Local sequence data are valuable because they show how viruses circulated in a
-particular country. [Add one or two sentences about influenza in Sri Lanka, with a citation
-from your own reading.]
+particular country.
 
 **Aim:** To compare HA gene sequences of influenza A (H1N1) viruses collected in Sri Lanka
 (2009-2011) to describe their nucleotide composition, identify conserved and variable regions,
 and explore their genetic relationships.
-
-**Questions / hypotheses:**
-1. Does GC content differ between years of collection?
-2. Is variation spread evenly along the gene, or concentrated in particular regions and codon
-   positions (expected: more changes at the third codon position)?
-3. Do the sequences cluster by year of collection or by location?
 
 ## 3. Data
 
@@ -52,17 +42,15 @@ and explore their genetic relationships.
   because they are not HA. Cleaning is done in `code/01_prepare_data.R`.
 - **Final data set:** 12 HA coding sequences, each 1,701 nucleotides, collected in Sri Lanka
   (`[n]` in 2009, `[n]` in 2010, `[n]` in 2011), from `[locations: Sri Lanka, Colombo,
-  Karapitiya, Matara, Rathnapura]`. Subtype H1N1; `[check the GenBank records to confirm
-  whether these are pandemic 2009 H1N1 viruses and say so]`.
+  Karapitiya, Matara, Rathnapura]`. Subtype H1N1;`.
 - **Variables:** accession, location, year, collection date, sequence length.
-- **Associated publication:** `[open one GenBank record, e.g. KC190041, find the linked
-  publication and cite it here]`.
+- **Associat
 - **Ethics and licence:** GenBank data are public and free to use; the original submitters are
   acknowledged by citing the accessions. No human subject data are used.
 
 ## 4. Methods
 
-All analysis was done in R (`[R version]`) in `code/02_analysis.Rmd`.
+All analysis was done in R  in `code/02_analysis.Rmd`.
 
 1. **Import and quality control.** Sequences were read with `Biostrings`. Length and ambiguous
    bases were checked (sequences with more than 1% ambiguous bases would be removed).
@@ -89,15 +77,12 @@ All analysis was done in R (`[R version]`) in `code/02_analysis.Rmd`.
 
 ### 5.1 Sequence quality
 
-[Number of sequences, length (all 1,701 nt), number of ambiguous bases (a few sequences
-contain 1-3 ambiguous bases).]
 
-![Figure 1](figures/length_plot-1.png)
 *Figure 1. Length of each HA sequence, coloured by year of collection.*
 
 ### 5.2 Nucleotide composition and GC content
 
-[Table from `results/nucleotide_composition.csv` or the Rmd output.]
+
 
 | Year | n | %A | %C | %G | %T | %GC (mean ± sd) |
 |---|---|---|---|---|---|---|
@@ -112,14 +97,11 @@ contain 1-3 ambiguous bases).]
 *Figure 3. GC content (%) of each sequence.*
 
 ![Figure 4](figures/gc_test-1.png)
-*Figure 4. GC content by year. Kruskal-Wallis test: χ² = [ ], p = [ ].*
-
-[Describe: is HA rich in A? Is GC content around 40-41%? Any difference between years?]
+*Figure 4. GC content by year. Kruskal-Wallis test: χ² = [ ], p = [ ].
 
 ### 5.3 Conserved and variable regions
 
-[Alignment summary from the Rmd: sequences, alignment length, variable sites, % variable,
-fully conserved positions, mean and minimum pairwise identity.]
+
 
 ![Figure 5](figures/h1_cons-1.png)
 *Figure 5. Conservation along the alignment (30-nt window).*
@@ -127,7 +109,7 @@ fully conserved positions, mean and minimum pairwise identity.]
 ![Figure 6](figures/h1_var-1.png)
 *Figure 6. Variable sites per 100-nt bin.*
 
-[Name the regions with most variation and the longest conserved block(s) with positions.]
+
 
 ![Figure 7](figures/h1_identity-1.png)
 *Figure 7. Pairwise nucleotide identity (%).*
