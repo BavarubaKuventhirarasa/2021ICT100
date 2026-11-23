@@ -2,7 +2,7 @@
 
 **Student registration number:** 2021/ICT/100
 **Name:** Bavaruba Kuventhirarasa
-**Module:** Bioinformatics, ICA3 (2026)
+
 
 ---
 
