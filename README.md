@@ -142,17 +142,3 @@ Future work: add H3N2 or global H1N1 sequences for comparison, build maximum-lik
 4. Run `rmarkdown::render("code/02_analysis.Rmd")`. The HTML appears in `code/`, figures in `figures/` and tables in `results/`.
 
 Package versions are printed with `sessionInfo()` at the end of `code/02_analysis.html`. The random seed is set with `set.seed(2026)` for the bootstrap.
-
-## 9. References
-
-- Bodenhofer U, Bonatesta E, Horejs-Kainrath C, Hochreiter S (2015). msa: an R package for multiple sequence alignment. *Bioinformatics* 31(24):3997-3999.
-- Kolde R. pheatmap: Pretty Heatmaps. R package.
-- Pagès H, Aboyoun P, Gentleman R, DebRoy S. Biostrings: Efficient manipulation of biological strings. R/Bioconductor package.
-- Paradis E, Schliep K (2019). ape 5.0: an environment for modern phylogenetics and evolutionary analyses in R. *Bioinformatics* 35(3):526-528.
-- R Core Team. R: A Language and Environment for Statistical Computing. R Foundation for Statistical Computing, Vienna, Austria. https://www.R-project.org/
-- Saitou N, Nei M (1987). The neighbor-joining method: a new method for reconstructing phylogenetic trees. *Molecular Biology and Evolution* 4(4):406-425.
-- Sayers EW, et al. (2022). Database resources of the National Center for Biotechnology Information. *Nucleic Acids Research* 50(D1):D20-D26.
-- Sievers F, et al. (2011). Fast, scalable generation of high-quality protein multiple sequence alignments using Clustal Omega. *Molecular Systems Biology* 7:539.
-- Skehel JJ, Wiley DC (2000). Receptor binding and membrane-fusion in virus entry: the influenza hemagglutinin. *Annual Review of Biochemistry* 69:531-569.
-- Wickham H, et al. (2019). Welcome to the tidyverse. *Journal of Open Source Software* 4(43):1686.
-- **Dataset:** NCBI GenBank accessions KC190041-KC190052 (`data/selected_accessions.csv`), https://www.ncbi.nlm.nih.gov/genbank/. Accessed November 2026.
