@@ -13,7 +13,7 @@ affects vaccine design and surveillance. We analysed 12 hemagglutinin (HA) gene 
 influenza A (H1N1) viruses collected in Sri Lanka between 2009 and 2011 (NCBI GenBank). We
 calculated nucleotide composition and GC content, aligned the sequences with Clustal Omega,
 identified conserved and variable regions and built a neighbour-joining tree in R. Mean GC
-content was `[x]`%, sequences were `[x]`% identical on average, and `[n]` of 1,701 nucleotide
+content was `[x]`%, sequences were `99.3`% identical on average, and `44` of 1,701 nucleotide
 positions were variable, mostly at the `[third]` codon position. The tree showed `[pattern]`.]
 
 ## 2. Introduction
